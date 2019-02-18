@@ -21,12 +21,14 @@ from scipy.signal import medfilt
 
 from glob import glob
 from os import path, makedirs, remove
+from sys import argv
 import re
 
 import types
 from copy import deepcopy
 
 from collections import deque
+from random import sample
 
 import matplotlib.pyplot as plt
 from matplotlib import patches
@@ -186,7 +188,7 @@ def calculate_vertical_projection_histogram(pretenders, max_y):
 
     vcs = retrieve_vertical_coordinates(pretenders)
 
-    hist = np.zeros((max_y,))
+    hist = np.zeros((round(max_y),))
 
     for p in pretenders:
         for v in range(int(p.y0), int(p.y1)+1):
@@ -199,7 +201,7 @@ def calculate_horizontal_projection_histogram(pretenders, max_x):
 
     vcs = retrieve_horizontal_coordinates(pretenders)
 
-    hist = np.zeros((max_x,))
+    hist = np.zeros((round(max_x),))
 
     for p in pretenders:
         for v in range(int(p.x0), int(p.x1)+1):
@@ -225,11 +227,12 @@ def uncontainerize(lst):
 
     return result
 
-   
-def draw_rect_bbox((x0, y0, x1, y1), ax_, color):
+
+def draw_rect_bbox(coords, ax_, color):
     """
     Draws an unfilled rectable onto ax.
     """
+    x0, y0, x1, y1 = coords
     ax_.add_patch(
         patches.Rectangle(
             (x0, y0),
@@ -329,6 +332,13 @@ def extract_characters(element):
 dirname = path.dirname(path.realpath(__file__))
 data_dir = path.join(dirname, 'data')
 result_dir = path.join(dirname, 'results')
+numpages = -1
+
+if(len(argv)>1):
+    data_dir = path.join(data_dir, argv[1])
+	
+if(len(argv)>2):
+    numpages = int(argv[2])
 
 formats = {
     'PDF': '*.pdf',
@@ -352,7 +362,12 @@ for p in results['PDF']['paths']:
     p_result = path.join(result_dir, path.split(p)[-1])
     pp = PdfPages(p_result)
 
-    for p_layout in extract_layout_by_page(p):
+    p_layouts = extract_layout_by_page(p)
+    if(numpages >= 0):
+        numpages = min(numpages, len(p_layouts))
+        p_layouts = sample(p_layouts, numpages)
+
+    for p_layout in p_layouts:
 
         texts = []
         rects = []
